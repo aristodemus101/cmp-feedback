@@ -31,7 +31,7 @@
     <!-- Student Details -->
     <div id="studentDetails" class="space-y-6"></div>
   </main>
-
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
 let studentsData = [];
 let selectedStudent = null;
@@ -48,25 +48,21 @@ async function loadCSV() {
   try {
     const res = await fetch('data.csv');
     const text = await res.text();
-    const lines = text.trim().split('\n');
-    const headers = lines[0].split(',');
-    studentsData = lines.slice(1).map(line => {
-      const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(c => c.replace(/^"|"$/g,'').trim());
-      return {
-        timestamp: cols[0],
-        email: cols[1],
-        panelistName: cols[2],
-        studentName: cols[3],
-        communication: parseRating(cols[4]),
-        bodyLanguage: parseRating(cols[5]),
-        domainKnowledge: parseRating(cols[6]),
-        analyticalThinking: parseRating(cols[7]),
-        leadership: parseRating(cols[8]),
-        culturalFit: parseRating(cols[9]),
-        overall: cols[10],
-        feedback: cols[11],
-      };
-    });
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+    studentsData = parsed.data.map(row => ({
+      timestamp: row["Timestamp"] || '',
+      email: row["Email Address"] || '',
+      panelistName: row["Panelist Name"] || '',
+      studentName: row["Student Name"] || '',
+      communication: parseRating(row[Object.keys(row).find(k=>k.includes('Communication Skills'))]),
+      bodyLanguage: parseRating(row[Object.keys(row).find(k=>k.includes('Body Language'))]),
+      domainKnowledge: parseRating(row[Object.keys(row).find(k=>k.includes('Domain Knowledge'))]),
+      analyticalThinking: parseRating(row[Object.keys(row).find(k=>k.includes('Analytical Thinking'))]),
+      leadership: parseRating(row[Object.keys(row).find(k=>k.includes('Leadership'))]),
+      culturalFit: parseRating(row[Object.keys(row).find(k=>k.includes('Cultural Fit'))]),
+      overall: row["Overall Interview Performance"] || '',
+      feedback: row["Qualitative Feedback or any Additional Comments (Optional)"] || ''
+    }));
   } catch(e) {
     console.error('Failed to load CSV', e);
   }
