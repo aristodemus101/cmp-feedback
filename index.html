@@ -1,86 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Career Mentorship Program 8.0</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Mentorship Program 8.0</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
-  <!-- Header -->
-  <header class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">Career Mentorship Program 8.0</h1>
-        <p class="mt-1 text-sm text-gray-500">Student Performance Dashboard</p>
-      </div>
-      <div class="text-indigo-600 text-4xl">🏆</div>
-    </div>
-  </header>
 
-  <main class="max-w-6xl mx-auto px-6 py-8 space-y-6">
-    <!-- Search -->
-    <div class="bg-white rounded-xl shadow-lg p-6 relative">
-      <input type="text" id="searchInput" placeholder="Search for a student by name..." class="w-full pl-4 pr-4 py-4 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-      <ul id="searchResults" class="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg max-h-64 overflow-y-auto hidden"></ul>
-    </div>
+<div class="max-w-6xl mx-auto py-8">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Career Mentorship Program 8.0</h1>
+  
+  <div class="mb-6 relative">
+    <input id="searchInput" type="text" placeholder="Search student..." 
+      class="w-full pl-4 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"/>
+    <ul id="searchResults" class="absolute z-50 w-full bg-white border rounded-lg mt-1 max-h-64 overflow-y-auto hidden"></ul>
+  </div>
 
-    <!-- Student Details -->
-    <div id="studentDetails" class="space-y-6"></div>
-  </main>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <div id="studentDetails" class="space-y-6"></div>
+</div>
+
 <script>
 let studentsData = [];
 let selectedStudent = null;
 
-// Parse rating strings like "4 - Good"
 function parseRating(str) {
-  if (!str) return 3;
+  if(!str) return 3;
   const match = str.match(/^(\d)/);
   return match ? parseInt(match[1]) : 3;
 }
 
-// Load CSV
-async function loadCSV() {
-  try {
-    const res = await fetch('data.csv');
-    const text = await res.text();
-    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-    studentsData = parsed.data.map(row => ({
-      timestamp: row["Timestamp"] || '',
-      email: row["Email Address"] || '',
-      panelistName: row["Panelist Name"] || '',
-      studentName: row["Student Name"] || '',
-      communication: parseRating(row[Object.keys(row).find(k=>k.includes('Communication Skills'))]),
-      bodyLanguage: parseRating(row[Object.keys(row).find(k=>k.includes('Body Language'))]),
-      domainKnowledge: parseRating(row[Object.keys(row).find(k=>k.includes('Domain Knowledge'))]),
-      analyticalThinking: parseRating(row[Object.keys(row).find(k=>k.includes('Analytical Thinking'))]),
-      leadership: parseRating(row[Object.keys(row).find(k=>k.includes('Leadership'))]),
-      culturalFit: parseRating(row[Object.keys(row).find(k=>k.includes('Cultural Fit'))]),
-      overall: row["Overall Interview Performance"] || '',
-      feedback: row["Qualitative Feedback or any Additional Comments (Optional)"] || ''
-    }));
-  } catch(e) {
-    console.error('Failed to load CSV', e);
-  }
+function getAverage(student) {
+  const total = student.communication + student.bodyLanguage + student.domainKnowledge +
+                student.analyticalThinking + student.leadership + student.culturalFit;
+  return (total/6).toFixed(1);
 }
 
-// Search functionality
-document.getElementById('searchInput').addEventListener('input', e => {
+function getChartData(student) {
+  return {
+    labels: ['Communication','Body Language','Domain Knowledge','Analytical Thinking','Leadership','Cultural Fit'],
+    datasets: [{
+      label: 'Rating',
+      data: [student.communication, student.bodyLanguage, student.domainKnowledge, student.analyticalThinking, student.leadership, student.culturalFit],
+      backgroundColor: 'rgba(79, 70, 229, 0.2)',
+      borderColor: 'rgba(79, 70, 229, 1)',
+      borderWidth: 2
+    }]
+  };
+}
+
+function renderStudent() {
+  const container = document.getElementById('studentDetails');
+  container.innerHTML = '';
+  if(!selectedStudent) return;
+  
+  // Header
+  const header = document.createElement('div');
+  header.className = 'bg-white rounded-xl shadow-lg p-6 flex justify-between items-start';
+  header.innerHTML = `
+    <div>
+      <h2 class="text-3xl font-bold">${selectedStudent.studentName}</h2>
+      <p class="text-gray-500 mt-1">Evaluated by: <strong>${selectedStudent.panelistName}</strong></p>
+      <p class="text-xs text-gray-400 mt-1">${selectedStudent.timestamp}</p>
+    </div>
+    <div class="text-right">
+      <div class="text-4xl font-bold text-blue-600">${getAverage(selectedStudent)}</div>
+      <p class="text-gray-500 mt-1">Average Score</p>
+    </div>
+  `;
+  container.appendChild(header);
+
+  // Chart
+  const chartCard = document.createElement('div');
+  chartCard.className = 'bg-white rounded-xl shadow-lg p-6';
+  chartCard.innerHTML = `<canvas id="radarChart" height="400"></canvas>`;
+  container.appendChild(chartCard);
+  
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: getChartData(selectedStudent),
+    options: {
+      scales: {
+        r: {
+          suggestedMin: 0,
+          suggestedMax: 5,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+
+  // Overall & Feedback
+  const overallCard = document.createElement('div');
+  overallCard.className = 'bg-white rounded-xl shadow-lg p-6';
+  overallCard.innerHTML = `
+    <h3 class="text-xl font-semibold mb-2">Overall Interview Performance</h3>
+    <div class="bg-indigo-50 border-l-4 border-indigo-600 p-4 rounded">${selectedStudent.overall}</div>
+    <h3 class="text-xl font-semibold mt-4 mb-2">Feedback</h3>
+    <div class="bg-gray-50 p-4 border rounded">${selectedStudent.feedback}</div>
+  `;
+  container.appendChild(overallCard);
+}
+
+// Load CSV
+fetch('data.csv')
+.then(res => res.text())
+.then(text => {
+  const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+  studentsData = parsed.data.map(row => ({
+    timestamp: row['Timestamp'] || '',
+    email: row['Email Address'] || '',
+    panelistName: row['Panelist Name'] || '',
+    studentName: row['Student Name'] || '',
+    communication: parseRating(row[Object.keys(row).find(k=>k.includes('Communication'))]),
+    bodyLanguage: parseRating(row[Object.keys(row).find(k=>k.includes('Body Language'))]),
+    domainKnowledge: parseRating(row[Object.keys(row).find(k=>k.includes('Domain Knowledge'))]),
+    analyticalThinking: parseRating(row[Object.keys(row).find(k=>k.includes('Analytical Thinking'))]),
+    leadership: parseRating(row[Object.keys(row).find(k=>k.includes('Leadership'))]),
+    culturalFit: parseRating(row[Object.keys(row).find(k=>k.includes('Cultural Fit'))]),
+    overall: row['Overall Interview Performance'] || '',
+    feedback: row['Qualitative Feedback or any Additional Comments (Optional)'] || ''
+  }));
+});
+
+// Search
+const input = document.getElementById('searchInput');
+const results = document.getElementById('searchResults');
+input.addEventListener('input', e => {
   const term = e.target.value.toLowerCase();
-  const results = document.getElementById('searchResults');
   results.innerHTML = '';
-  if (!term) {
-    results.classList.add('hidden');
-    return;
-  }
-  const filtered = studentsData.filter(s =>
-    s.studentName.toLowerCase().includes(term)
-  );
-  if (filtered.length === 0) {
+  if(!term) { results.classList.add('hidden'); return; }
+  const filtered = studentsData.filter(s => s.studentName.toLowerCase().includes(term));
+  if(filtered.length === 0) { 
     results.innerHTML = `<li class="px-4 py-2 text-gray-500">No students found</li>`;
     results.classList.remove('hidden');
     return;
@@ -88,140 +141,12 @@ document.getElementById('searchInput').addEventListener('input', e => {
   filtered.forEach(s => {
     const li = document.createElement('li');
     li.className = "px-4 py-2 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-b-0";
-    li.innerHTML = `<strong>${s.studentName}</strong> <span class="text-gray-500 text-sm">(${s.panelistName})</span>`;
-    li.onclick = () => {
-      selectedStudent = s;
-      results.classList.add('hidden');
-      document.getElementById('searchInput').value = '';
-      renderStudent();
-    };
+    li.innerHTML = `<strong>${s.studentName}</strong> <span class="text-gray-500">(${s.panelistName})</span>`;
+    li.onclick = () => { selectedStudent = s; results.classList.add('hidden'); input.value=''; renderStudent(); };
     results.appendChild(li);
   });
   results.classList.remove('hidden');
 });
-
-// Average score
-function getAverageScore(s) {
-  const total = s.communication + s.bodyLanguage + s.domainKnowledge + s.analyticalThinking + s.leadership + s.culturalFit;
-  return (total/6).toFixed(1);
-}
-
-// Rating color
-function getRatingColor(r) {
-  if (r >= 4.5) return 'text-green-600';
-  if (r >= 3.5) return 'text-blue-600';
-  if (r >= 2.5) return 'text-yellow-600';
-  return 'text-red-600';
-}
-
-// Select student
-function selectStudent(student) {
-  selectedStudent = student;
-  document.getElementById('searchResults').classList.add('hidden');
-  document.getElementById('searchInput').value = '';
-  renderStudent();
-}
-
-// Render student details
-function renderStudent() {
-  const container = document.getElementById('studentDetails');
-  if (!selectedStudent) {
-    container.innerHTML = `<div class="bg-white rounded-xl shadow-lg p-12 text-center">
-      <div class="text-gray-300 text-6xl mb-4">🔍</div>
-      <h3 class="text-xl font-semibold text-gray-900 mb-2">Search for a Student</h3>
-      <p class="text-gray-500">Use the search bar above to find and view student performance data</p>
-    </div>`;
-    return;
-  }
-
-  const avg = getAverageScore(selectedStudent);
-
-  container.innerHTML = `
-  <!-- Header Card -->
-  <div class="bg-white rounded-xl shadow-lg p-6 flex justify-between items-start">
-    <div>
-      <h2 class="text-3xl font-bold text-gray-900">${selectedStudent.studentName}</h2>
-      <p class="text-sm text-gray-500 mt-1">Evaluated by: <span class="font-medium">${selectedStudent.panelistName}</span></p>
-      <p class="text-xs text-gray-400 mt-1">${selectedStudent.timestamp}</p>
-    </div>
-    <div class="text-right">
-      <div class="text-4xl font-bold ${getRatingColor(avg)}">${avg}</div>
-      <p class="text-sm text-gray-500 mt-1">Average Score</p>
-    </div>
-  </div>
-
-  <!-- Radar Chart -->
-  <div class="bg-white rounded-xl shadow-lg p-6">
-    <h3 class="text-xl font-semibold text-gray-900 mb-6">Performance Metrics</h3>
-    <canvas id="radarChart" height="400"></canvas>
-    <div class="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-      ${Object.entries({
-        "Communication": selectedStudent.communication,
-        "Body Language": selectedStudent.bodyLanguage,
-        "Domain Knowledge": selectedStudent.domainKnowledge,
-        "Analytical Thinking": selectedStudent.analyticalThinking,
-        "Leadership": selectedStudent.leadership,
-        "Cultural Fit": selectedStudent.culturalFit
-      }).map(([skill,value]) => `
-        <div class="bg-gray-50 rounded-lg p-3">
-          <p class="text-xs text-gray-600 mb-1">${skill}</p>
-          <p class="text-2xl font-bold ${getRatingColor(value)}">${value}/5</p>
-        </div>
-      `).join('')}
-    </div>
-  </div>
-
-  <!-- Overall -->
-  <div class="bg-white rounded-xl shadow-lg p-6">
-    <h3 class="text-xl font-semibold text-gray-900 mb-4">Overall Interview Performance</h3>
-    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border-l-4 border-indigo-600 p-5 rounded-lg">
-      <p class="text-indigo-900 font-medium text-lg">${selectedStudent.overall}</p>
-    </div>
-  </div>
-
-  <!-- Feedback -->
-  <div class="bg-white rounded-xl shadow-lg p-6">
-    <h3 class="text-xl font-semibold text-gray-900 mb-4">Qualitative Feedback & Comments</h3>
-    <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
-      <p class="text-gray-700 leading-relaxed text-base">${selectedStudent.feedback}</p>
-    </div>
-  </div>
-  `;
-
-  // Render Radar Chart
-  const ctx = document.getElementById('radarChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: ["Communication","Body Language","Domain Knowledge","Analytical Thinking","Leadership","Cultural Fit"],
-      datasets: [{
-        label: "Rating",
-        data: [selectedStudent.communication, selectedStudent.bodyLanguage, selectedStudent.domainKnowledge, selectedStudent.analyticalThinking, selectedStudent.leadership, selectedStudent.culturalFit],
-        backgroundColor: 'rgba(79,70,229,0.3)',
-        borderColor: '#4f46e5',
-        borderWidth: 2,
-        pointBackgroundColor: '#4f46e5'
-      }]
-    },
-    options: {
-      scales: {
-        r: {
-          min: 0,
-          max: 5,
-          ticks: { stepSize: 1 }
-        }
-      },
-      plugins: {
-        legend: { position: 'bottom' }
-      },
-      responsive: true,
-      maintainAspectRatio: false
-    }
-  });
-}
-
-// Initialize
-loadCSV().then(renderStudent);
 </script>
 </body>
 </html>
