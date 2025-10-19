@@ -7,18 +7,26 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  #studentDetails canvas {
+    width: 100% !important;
+    height: 400px !important;
+  }
+</style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
 
 <div class="max-w-6xl mx-auto py-8">
   <h1 class="text-3xl font-bold text-gray-900 mb-6">Career Mentorship Program 8.0</h1>
   
+  <!-- Search -->
   <div class="mb-6 relative">
     <input id="searchInput" type="text" placeholder="Search student..." 
       class="w-full pl-4 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"/>
     <ul id="searchResults" class="absolute z-50 w-full bg-white border rounded-lg mt-1 max-h-64 overflow-y-auto hidden"></ul>
   </div>
 
+  <!-- Student Details -->
   <div id="studentDetails" class="space-y-6"></div>
 </div>
 
@@ -26,18 +34,21 @@
 let studentsData = [];
 let selectedStudent = null;
 
+// Convert rating string like "4 - Good" to number
 function parseRating(str) {
   if(!str) return 3;
   const match = str.match(/^(\d)/);
   return match ? parseInt(match[1]) : 3;
 }
 
+// Compute average
 function getAverage(student) {
   const total = student.communication + student.bodyLanguage + student.domainKnowledge +
                 student.analyticalThinking + student.leadership + student.culturalFit;
   return (total/6).toFixed(1);
 }
 
+// Chart data
 function getChartData(student) {
   return {
     labels: ['Communication','Body Language','Domain Knowledge','Analytical Thinking','Leadership','Cultural Fit'],
@@ -46,11 +57,14 @@ function getChartData(student) {
       data: [student.communication, student.bodyLanguage, student.domainKnowledge, student.analyticalThinking, student.leadership, student.culturalFit],
       backgroundColor: 'rgba(79, 70, 229, 0.2)',
       borderColor: 'rgba(79, 70, 229, 1)',
-      borderWidth: 2
+      borderWidth: 2,
+      pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+      pointBorderColor: '#fff'
     }]
   };
 }
 
+// Render student dashboard
 function renderStudent() {
   const container = document.getElementById('studentDetails');
   container.innerHTML = '';
@@ -75,19 +89,24 @@ function renderStudent() {
   // Chart
   const chartCard = document.createElement('div');
   chartCard.className = 'bg-white rounded-xl shadow-lg p-6';
-  chartCard.innerHTML = `<canvas id="radarChart" height="400"></canvas>`;
+  chartCard.innerHTML = `<canvas id="radarChart"></canvas>`;
   container.appendChild(chartCard);
-  
+
   new Chart(document.getElementById('radarChart'), {
     type: 'radar',
     data: getChartData(selectedStudent),
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       scales: {
         r: {
           suggestedMin: 0,
           suggestedMax: 5,
-          ticks: { stepSize: 1 }
+          ticks: { stepSize: 1, backdropColor: 'transparent' }
         }
+      },
+      plugins: {
+        legend: { position: 'bottom' }
       }
     }
   });
