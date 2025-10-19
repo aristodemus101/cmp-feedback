@@ -335,22 +335,127 @@
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #e5e7eb;
+            width: 64px;
+            height: 64px;
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
             border-top-color: #4f46e5;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .spinner-ring:nth-child(1) {
+            animation-delay: -0.45s;
+        }
+
+        .spinner-ring:nth-child(2) {
+            animation-delay: -0.3s;
+            border-top-color: #ea580c;
+        }
+
+        .spinner-ring:nth-child(3) {
+            animation-delay: -0.15s;
+            border-top-color: #8b5cf6;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .loading-text {
             color: #6b7280;
             font-size: 16px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 56px;
+            height: 56px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 1000;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            background: #4338ca;
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+        }
+
+        .back-to-top:active {
+            transform: translateY(-2px);
+        }
+
+        .ai-suggestions-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f59e0b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .ai-suggestions-list {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0 0;
+        }
+
+        .ai-suggestions-list li {
+            color: #92400e;
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .ai-suggestions-list li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
         }
     </style>
 </head>
@@ -365,8 +470,22 @@
             const [selectedStudent, setSelectedStudent] = useState(null);
             const [studentsData, setStudentsData] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
+            const [showBackToTop, setShowBackToTop] = useState(false);
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
+
+            // Handle scroll for back to top button
+            useEffect(() => {
+                const handleScroll = () => {
+                    setShowBackToTop(window.scrollY > 300);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const scrollToTop = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
 
             useEffect(() => {
                 fetch('data.csv')
@@ -437,6 +556,70 @@
             const handleStudentSelect = (student) => {
                 setSelectedStudent(student);
                 setSearchTerm('');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            // Generate AI-based suggestions from feedback
+            const generateSuggestions = (feedback, overall) => {
+                const suggestions = [];
+                const lowerFeedback = feedback.toLowerCase();
+                
+                // Communication & Clarity
+                if (lowerFeedback.includes('structur') || lowerFeedback.includes('clarity') || lowerFeedback.includes('articul')) {
+                    suggestions.push('Practice structuring answers using the STAR method (Situation, Task, Action, Result) for clearer communication');
+                }
+                
+                if (lowerFeedback.includes('filler') || lowerFeedback.includes('verbose') || lowerFeedback.includes('rambl')) {
+                    suggestions.push('Record yourself speaking and identify filler words. Practice pause techniques instead of using "um", "like", or "you know"');
+                }
+                
+                // Content & Knowledge
+                if (lowerFeedback.includes('content') || lowerFeedback.includes('knowledge') || lowerFeedback.includes('subject matter')) {
+                    suggestions.push('Deepen domain knowledge by reading industry publications, case studies, and staying updated with current trends');
+                }
+                
+                if (lowerFeedback.includes('cv') || lowerFeedback.includes('resume')) {
+                    suggestions.push('Review and optimize your CV/resume. Ensure every bullet point follows the XYZ format: "Accomplished X by doing Y, resulting in Z"');
+                }
+                
+                // Presentation & Confidence
+                if (lowerFeedback.includes('confiden') || lowerFeedback.includes('nervou')) {
+                    suggestions.push('Build confidence through mock interviews. Practice power poses before interviews and maintain positive self-talk');
+                }
+                
+                if (lowerFeedback.includes('sell') || lowerFeedback.includes('market')) {
+                    suggestions.push('Learn to tell compelling stories about your achievements. Focus on impact and outcomes, not just activities');
+                }
+                
+                // Attitude & Soft Skills
+                if (lowerFeedback.includes('attitude') || lowerFeedback.includes('enthusias')) {
+                    suggestions.push('Continue maintaining your positive attitude and enthusiasm—it\'s one of your strongest assets!');
+                }
+                
+                if (lowerFeedback.includes('goal') || lowerFeedback.includes('oriented')) {
+                    suggestions.push('Leverage your goal-oriented mindset by setting SMART goals for interview preparation and career development');
+                }
+                
+                // If needs improvement overall
+                if (overall.includes('Needs practice') || overall.includes('Average')) {
+                    if (suggestions.length === 0) {
+                        suggestions.push('Schedule regular mock interview sessions with mentors or peers to build consistency');
+                    }
+                    suggestions.push('Focus on one improvement area per week for steady, measurable progress');
+                }
+                
+                // If excellent/good
+                if (overall.includes('Excellent') || overall.includes('Good') && suggestions.length === 0) {
+                    suggestions.push('Great work! Continue refining your skills and help mentor peers who are struggling');
+                }
+                
+                // Default suggestions if nothing specific found
+                if (suggestions.length === 0) {
+                    suggestions.push('Review the feedback carefully and create an action plan for each area mentioned');
+                    suggestions.push('Seek specific examples and practice scenarios related to your weaker areas');
+                }
+                
+                return suggestions;
             };
 
             useEffect(() => {
@@ -541,7 +724,11 @@
             if (isLoading) {
                 return (
                     <div className="loading">
-                        <div className="spinner"></div>
+                        <div className="spinner">
+                            <div className="spinner-ring"></div>
+                            <div className="spinner-ring"></div>
+                            <div className="spinner-ring"></div>
+                        </div>
                         <p className="loading-text">Loading student data...</p>
                     </div>
                 );
@@ -689,6 +876,20 @@
                                     <div className="feedback-box">
                                         <div className="feedback-text">{selectedStudent.feedback}</div>
                                     </div>
+                                    
+                                    <div className="ai-suggestions-card">
+                                        <div className="ai-badge">
+                                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                            </svg>
+                                            AI-Powered Suggestions
+                                        </div>
+                                        <ul className="ai-suggestions-list">
+                                            {generateSuggestions(selectedStudent.feedback, selectedStudent.overall).map((suggestion, idx) => (
+                                                <li key={idx}>{suggestion}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -700,6 +901,17 @@
                                 <p className="empty-text">Use the search bar above to find and view student performance data</p>
                             </div>
                         )}
+
+                        {/* Back to Top Button */}
+                        <button 
+                            className={`back-to-top ${showBackToTop ? 'visible' : ''}`}
+                            onClick={scrollToTop}
+                            aria-label="Back to top"
+                        >
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
+                        </button>
                     </div>
                 </>
             );
