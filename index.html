@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Career Mentorship Program 8.0</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.0/Recharts.js"></script>
+    <title>Career Mentorship Program 8.0 - PI Feedback</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -218,7 +218,16 @@
         .chart-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 24px;
+            align-items: center;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 400px;
         }
 
         .metrics-grid {
@@ -325,13 +334,15 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         function App() {
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedStudent, setSelectedStudent] = useState(null);
             const [studentsData, setStudentsData] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
 
             useEffect(() => {
                 fetch('data.csv')
@@ -404,6 +415,93 @@
                 setSearchTerm('');
             };
 
+            useEffect(() => {
+                if (selectedStudent && chartRef.current) {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: [
+                                'Communication',
+                                'Body Language',
+                                'Domain Knowledge',
+                                'Analytical Thinking',
+                                'Leadership',
+                                'Cultural Fit'
+                            ],
+                            datasets: [{
+                                label: 'Performance Rating',
+                                data: [
+                                    selectedStudent.communication,
+                                    selectedStudent.bodyLanguage,
+                                    selectedStudent.domainKnowledge,
+                                    selectedStudent.analyticalThinking,
+                                    selectedStudent.leadership,
+                                    selectedStudent.culturalFit
+                                ],
+                                backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                                borderColor: 'rgb(79, 70, 229)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgb(79, 70, 229)',
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: 'rgb(79, 70, 229)',
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                r: {
+                                    beginAtZero: true,
+                                    max: 5,
+                                    min: 0,
+                                    ticks: {
+                                        stepSize: 1,
+                                        font: {
+                                            size: 12
+                                        }
+                                    },
+                                    pointLabels: {
+                                        font: {
+                                            size: 13,
+                                            weight: '500'
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.1)'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        font: {
+                                            size: 13
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, [selectedStudent]);
+
             if (isLoading) {
                 return (
                     <div className="loading">
@@ -418,8 +516,8 @@
                     <div className="header">
                         <div className="header-content">
                             <div className="header-title">
-                                <h1>Career Mentorship Program 8.0</h1>
-                                <p>Student Performance Dashboard</p>
+                                <h1>Career Mentorship Program <span style={{color: '#ea580c'}}>8.0</span></h1>
+                                <p>PI Feedback Dashboard</p>
                             </div>
                             <svg className="header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -497,6 +595,12 @@
                                 <div className="card">
                                     <h3 className="card-title">Performance Metrics</h3>
                                     
+                                    <div className="chart-container">
+                                        <div className="chart-wrapper">
+                                            <canvas ref={chartRef}></canvas>
+                                        </div>
+                                    </div>
+
                                     <div className="metrics-grid">
                                         <div className="metric-box">
                                             <div className="metric-label">Communication Skills</div>
