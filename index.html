@@ -219,15 +219,39 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            min-height: 400px;
+            padding: 20px 10px;
+            min-height: 350px;
+            overflow: hidden;
         }
 
         .chart-wrapper {
             position: relative;
             width: 100%;
-            max-width: 500px;
-            height: 400px;
+            max-width: 450px;
+            height: 350px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                padding: 15px 5px;
+                min-height: 320px;
+            }
+
+            .chart-wrapper {
+                max-width: 100%;
+                height: 320px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chart-container {
+                padding: 10px 0;
+                min-height: 280px;
+            }
+
+            .chart-wrapper {
+                height: 280px;
+            }
         }
 
         .metrics-grid {
@@ -457,6 +481,14 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: true,
+                            layout: {
+                                padding: {
+                                    top: 20,
+                                    bottom: 20,
+                                    left: 10,
+                                    right: 10
+                                }
+                            },
                             scales: {
                                 r: {
                                     beginAtZero: true,
@@ -465,14 +497,16 @@
                                     ticks: {
                                         stepSize: 1,
                                         font: {
-                                            size: 12
-                                        }
+                                            size: 11
+                                        },
+                                        backdropPadding: 2
                                     },
                                     pointLabels: {
                                         font: {
-                                            size: 13,
+                                            size: window.innerWidth < 480 ? 10 : 12,
                                             weight: '500'
-                                        }
+                                        },
+                                        padding: window.innerWidth < 480 ? 5 : 10
                                     },
                                     grid: {
                                         color: 'rgba(0, 0, 0, 0.1)'
@@ -484,10 +518,12 @@
                                     display: true,
                                     position: 'bottom',
                                     labels: {
-                                        padding: 20,
+                                        padding: 15,
                                         font: {
-                                            size: 13
-                                        }
+                                            size: 12
+                                        },
+                                        boxWidth: 15,
+                                        boxHeight: 15
                                     }
                                 }
                             }
